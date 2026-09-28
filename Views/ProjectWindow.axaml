@@ -1,0 +1,255 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:readSounds.ViewModels"
+        x:Class="readSounds.Views.ProjectWindow"
+        x:DataType="vm:ProjectViewModel"
+        Title="{Binding Project.Meta.Name, StringFormat='readSounds — {0}'}"
+        Width="900" Height="760"
+        MinWidth="700" MinHeight="560"
+        Icon="/Assets/avalonia-logo.ico">
+
+    <Design.DataContext>
+        <vm:ProjectViewModel />
+    </Design.DataContext>
+
+    <DockPanel LastChildFill="True">
+
+        <!-- Шапка: имя, язык, голос -->
+        <Border DockPanel.Dock="Top" Padding="16,12" Background="#1F2430">
+            <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Project.Meta.Name}"
+                           FontSize="18" FontWeight="SemiBold" Foreground="White"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding SourceInfo}" FontSize="11" Foreground="#C8CDD6"
+                           TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer>
+            <StackPanel Margin="14" Spacing="12">
+
+                <!-- ============================== Настройки синтеза -->
+                <Border Padding="12" CornerRadius="6" BorderThickness="1" BorderBrush="#3C4043">
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto">
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,0" Spacing="4">
+                            <TextBlock Text="Язык" FontSize="12" Opacity="0.75" />
+                            <ComboBox ItemsSource="{Binding Languages}"
+                                      SelectedItem="{Binding LanguageId}"
+                                      HorizontalAlignment="Stretch"
+                                      HorizontalContentAlignment="Stretch" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="8,0,8,0" Spacing="4">
+                            <TextBlock Text="Голос" FontSize="12" Opacity="0.75" />
+                            <ComboBox ItemsSource="{Binding Speakers}"
+                                      SelectedItem="{Binding SpeakerId}"
+                                      HorizontalAlignment="Stretch"
+                                      HorizontalContentAlignment="Stretch" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="8,0,0,0" Spacing="4">
+                            <TextBlock Text="Символов в части" FontSize="12" Opacity="0.75" />
+                            <NumericUpDown Value="{Binding MaxChunkLength}"
+                                           Minimum="20" Maximum="2000"
+                                           Increment="10" FormatString="0"
+                                           HorizontalAlignment="Stretch" />
+                        </StackPanel>
+
+                        <Button Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                Margin="0,10,0,0"
+                                Content="Загрузить голоса с сервера"
+                                Command="{Binding LoadVoicesCommand}"
+                                HorizontalAlignment="Left"
+                                HorizontalContentAlignment="Center" />
+
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,8,0,0" Spacing="4">
+                            <TextBlock Text="{Binding RequestPreview}"
+                                       FontSize="11" Opacity="0.65"
+                                       FontFamily="Consolas,monospace" />
+                            <TextBlock Text="{Binding OptionsProblem}"
+                                       FontSize="12" Foreground="#F5D9A0"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{Binding !HasValidOptions}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Предупреждение о несовместимости -->
+                <Border Background="#4A3A16" Padding="10" CornerRadius="4"
+                        IsVisible="{Binding IsSplitStale}">
+                    <TextBlock Text="{Binding SplitWarning}" Foreground="#F5D9A0" TextWrapping="Wrap" />
+                </Border>
+
+                <!-- ============================== Прогресс -->
+                <Border Padding="12" CornerRadius="6" BorderThickness="1" BorderBrush="#3C4043">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding ProgressText}"
+                                       FontSize="15" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding StatusText}"
+                                       Opacity="0.75" FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="420" TextAlignment="Right" />
+                        </Grid>
+
+                        <ProgressBar Value="{Binding ProgressFraction}" Maximum="1" Height="10" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="{Binding StartButtonText}"
+                                    Command="{Binding StartCommand}"
+                                    IsEnabled="{Binding CanStart}"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center" />
+                            <Button Content="Стоп"
+                                    Command="{Binding StopCommand}"
+                                    IsEnabled="{Binding CanStop}"
+                                    MinWidth="90"
+                                    HorizontalContentAlignment="Center" />
+                            <Button Content="Начать заново"
+                                    Command="{Binding RestartCommand}"
+                                    IsEnabled="{Binding !IsRunning}"
+                                    MinWidth="130"
+                                    HorizontalContentAlignment="Center" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding NormalizationRunNote}"
+                                       FontSize="11" Opacity="0.7"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <TextBlock Text="Части идут по порядку. Можно закрыть приложение и продолжить позже —"
+                                   FontSize="11" Opacity="0.6" />
+                        <TextBlock Text="состояние сохраняется после каждой части, незаписанный хвост отбрасывается."
+                                   FontSize="11" Opacity="0.6" />
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================== Результат и плеер -->
+                <Border Padding="12" CornerRadius="6" BorderThickness="1" BorderBrush="#3C4043">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Результат" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding AudioPath}" FontSize="11" Opacity="0.7"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <TextBlock Text="Аудиоустройство недоступно. Откройте файл системным плеером."
+                                   FontSize="11" Foreground="#F5D9A0" TextWrapping="Wrap"
+                                   IsVisible="{Binding !IsPlayerAvailable}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="▶ Слушать"
+                                    Command="{Binding PlayCommand}"
+                                    IsEnabled="{Binding HasAudio}"
+                                    MinWidth="110"
+                                    HorizontalContentAlignment="Center" />
+                            <Button Content="Пауза"
+                                    Command="{Binding PauseOrResumeCommand}"
+                                    IsEnabled="{Binding HasAudio}"
+                                    MinWidth="100"
+                                    HorizontalContentAlignment="Center" />
+                            <Button Content="Стоп"
+                                    Command="{Binding StopPlaybackCommand}"
+                                    IsEnabled="{Binding HasAudio}"
+                                    MinWidth="100"
+                                    HorizontalContentAlignment="Center" />
+                            <TextBlock Text="{Binding PlaybackText}"
+                                       VerticalAlignment="Center" Opacity="0.8" FontFamily="Consolas,monospace" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Открыть папку проекта"
+                                    Command="{Binding OpenFolderCommand}"
+                                    HorizontalContentAlignment="Center" />
+                            <Button Content="Открыть result.wav"
+                                    Command="{Binding OpenAudioFileCommand}"
+                                    IsEnabled="{Binding HasAudio}"
+                                    HorizontalContentAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================== Ошибка -->
+                <Border Background="#3A1D1D" Padding="10" CornerRadius="4"
+                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding Error}" Foreground="#F5C6C2" TextWrapping="Wrap" />
+                </Border>
+
+                <!-- Предупреждение о подозрительных частях -->
+                <Border Background="#4A2A16" Padding="10" CornerRadius="4"
+                        IsVisible="{Binding HasSuspiciousParts}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding SuspiciousNote}" Foreground="#F5C6A2" TextWrapping="Wrap" />
+                        <ItemsControl ItemsSource="{Binding SuspiciousParts}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:Int32">
+                                    <Button Content="{Binding}"
+                                            Command="{Binding $parent[Window].((vm:ProjectViewModel)DataContext).RedoPartCommand}"
+                                            CommandParameter="{Binding}"
+                                            Margin="0,0,6,6"
+                                            Padding="10,4"
+                                            ToolTip.Tip="Переозвучить только эту часть" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================== Разбивка -->
+                <Border Padding="12" CornerRadius="6" BorderThickness="1" BorderBrush="#3C4043">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Разбивка текста" FontSize="14" FontWeight="SemiBold" />
+                        <TextBlock FontSize="11" Opacity="0.6" TextWrapping="Wrap"
+                                   Text="Порог мягкий: предложения не рвутся, часть может оказаться длиннее порога. ⚠ — здесь фраза всё же разорвана, точек рядом не нашлось." />
+
+                        <TextBlock Text="{Binding NormalizationNote}"
+                                   FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+
+                        <ListBox ItemsSource="{Binding Chunks}" MaxHeight="320">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ChunkPreviewItem">
+                                    <Grid ColumnDefinitions="Auto,Auto,*" Margin="4,3">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Number}"
+                                                   Opacity="0.5" FontFamily="Consolas,monospace"
+                                                   MinWidth="46" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="⚠" Margin="0,0,6,0"
+                                                   Foreground="#E8A33D"
+                                                   IsVisible="{Binding WasHardSplit}"
+                                                   ToolTip.Tip="Предложение длиннее порога, текст разрезан принудительно" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Text}"
+                                                   TextWrapping="Wrap"
+                                                   FontSize="12"
+                                                   Opacity="0.85" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================== Исходник -->
+                <Border Padding="12" CornerRadius="6" BorderThickness="1" BorderBrush="#3C4043">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Исходный текст" FontSize="14" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding SourcePreview, Mode=OneWay}"
+                                 IsReadOnly="True"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="240"
+                                 FontSize="12" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

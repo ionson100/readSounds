@@ -1,0 +1,206 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:readSounds.ViewModels"
+        xmlns:views="using:readSounds.Views"
+        xmlns:conv="using:readSounds.Views"
+        x:Class="readSounds.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="readSounds — озвучивание текстов через XTTS"
+        Width="1000" Height="680"
+        MinWidth="820" MinHeight="560"
+        Icon="/Assets/avalonia-logo.ico">
+
+    <Window.Resources>
+        <conv:StatusKindToBrushConverter x:Key="StatusBrush" />
+    </Window.Resources>
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <DockPanel LastChildFill="True">
+
+        <!-- Шапка -->
+        <Border DockPanel.Dock="Top" Padding="16,12" Background="#1F2430">
+            <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Grid.Column="0"
+                           Text="readSounds"
+                           FontSize="20" FontWeight="SemiBold"
+                           Foreground="White" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ServerStatus}"
+                           Margin="16,0,0,0"
+                           VerticalAlignment="Center"
+                           Foreground="#C8CDD6"
+                           TextTrimming="CharacterEllipsis" />
+            </Grid>
+        </Border>
+
+        <!-- Строка ошибки -->
+        <Border DockPanel.Dock="Bottom"
+                Padding="16,8"
+                Background="#3A1D1D"
+                IsVisible="{Binding LastError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding LastError}" Foreground="#F5C6C2" TextWrapping="Wrap" />
+        </Border>
+
+        <TabControl Margin="12">
+
+            <!-- ============================================ Проекты -->
+            <TabItem Header="Проекты">
+                <Grid ColumnDefinitions="360,*">
+
+                    <!-- Список -->
+                    <Border Grid.Column="0"
+                            Margin="0,0,12,0"
+                            Padding="8"
+                            BorderThickness="1"
+                            BorderBrush="#3C4043"
+                            CornerRadius="6">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top"
+                                       Margin="4,0,4,8"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding Projects.Count, StringFormat='Проектов: {0}'}" />
+
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0" Spacing="4">
+                                <Button Content="Новый проект"
+                                        Command="{Binding NewProjectCommand}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" />
+                                <Button Content="Открыть проект"
+                                        Command="{Binding OpenSelectedCommand}"
+                                        IsEnabled="{Binding SelectedProject, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" />
+                                <Button Content="Папка проекта"
+                                        Command="{Binding OpenSelectedFolderCommand}"
+                                        IsEnabled="{Binding SelectedProject, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" />
+                                <Button Content="Удалить проект"
+                                        Command="{Binding DeleteProjectCommand}"
+                                        CommandParameter="{Binding SelectedProject}"
+                                        IsEnabled="{Binding SelectedProject, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" />
+                                <Button Content="Обновить список"
+                                        Command="{Binding ReloadCommand}"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center" />
+                            </StackPanel>
+
+                            <ListBox ItemsSource="{Binding Projects}"
+                                     SelectedItem="{Binding SelectedProject}"
+                                     HorizontalAlignment="Stretch">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ProjectListItem">
+                                        <StackPanel Margin="4,6" Spacing="3">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Source}"
+                                                       FontSize="11" Opacity="0.7"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Voice}"
+                                                       FontSize="11" Opacity="0.7"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Status}"
+                                                           FontSize="11"
+                                                           Foreground="{Binding StatusKind, Converter={StaticResource StatusBrush}}" />
+                                                <TextBlock Text="{Binding ProgressText}"
+                                                           FontSize="11" Opacity="0.7" />
+                                            </StackPanel>
+                                            <ProgressBar Value="{Binding Progress}"
+                                                         Maximum="1"
+                                                         Height="4"
+                                                         IsVisible="{Binding HasProgress}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Выбранный проект -->
+                    <ScrollViewer Grid.Column="1">
+                        <StackPanel Spacing="10" IsVisible="{Binding SelectedProject, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                            <Border Padding="12" CornerRadius="6" BorderThickness="1" BorderBrush="#3C4043">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding SelectedProject.Name}"
+                                               FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding SelectedProject.Source}" Opacity="0.75" FontSize="12" />
+                                    <TextBlock Text="{Binding SelectedProject.Voice}" Opacity="0.75" FontSize="12" />
+                                    <TextBlock Text="{Binding SelectedProject.Updated}" Opacity="0.55" FontSize="11" />
+                                    <Border Background="#3A1D1D" Padding="8,6" CornerRadius="4"
+                                            IsVisible="{Binding SelectedProject.HasError}">
+                                        <TextBlock Text="{Binding SelectedProject.ErrorText}"
+                                                   Foreground="#F5C6C2"
+                                                   FontSize="12" TextWrapping="Wrap" />
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Text="Откройте проект, чтобы синтезировать или продолжить."
+                                       Opacity="0.6" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- ============================================ Сервер -->
+            <TabItem Header="Сервер и папки">
+                <ScrollViewer>
+                    <StackPanel Spacing="12" MaxWidth="640" HorizontalAlignment="Left">
+
+                        <TextBlock Text="Подключение к XTTS" FontSize="15" FontWeight="SemiBold" />
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Адрес сервера" FontSize="12" Opacity="0.75" />
+                            <TextBox Text="{Binding ServerUrl}" PlaceholderText="http://localhost:5002" />
+                            <TextBlock Text="Тот самый порт, который проброшен в docker-compose."
+                                       FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Папка с проектами" FontSize="12" Opacity="0.75" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Grid.Column="0" Text="{Binding ProjectsRoot}" PlaceholderText="C:\Users\...\Documents\readSounds Projects" />
+                                <Button Grid.Column="1" Margin="8,0,0,0"
+                                        Content="Открыть"
+                                        Command="{Binding OpenProjectsRootCommand}" />
+                            </Grid>
+                            <TextBlock Text="Каждый проект — отдельная подпапка с копией текста и результатом."
+                                       FontSize="11" Opacity="0.6" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Сохранить и проверить"
+                                    Command="{Binding SaveServerSettingsCommand}"
+                                    IsEnabled="{Binding !IsBusy}"
+                                    HorizontalContentAlignment="Center" />
+                            <TextBlock Text="{Binding ServerStatus}" VerticalAlignment="Center" Opacity="0.8" />
+                        </StackPanel>
+
+                        <Border Background="#1F2430" Padding="12" CornerRadius="6">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Что где лежит" FontWeight="SemiBold" Foreground="White" />
+                                <TextBlock Foreground="#C8CDD6" FontSize="12" TextWrapping="Wrap"
+                                           Text="Проект/
+  project.json    — язык, голос, порог длины части, прогресс
+  текст.txt        — копия исходника
+  audio/result.wav — результат, растёт по мере синтеза" />
+                                <TextBlock Foreground="#C8CDD6" FontSize="12" TextWrapping="Wrap"
+                                           Text="Состояние пишется после каждой части, поэтому закрытое приложение можно открыть и продолжить с того же места." />
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+    </DockPanel>
+</Window>

@@ -1,0 +1,63 @@
+# Результат сборки
+bin/
+obj/
+artifacts/
+
+# Assets\sound.ico НЕ игнорируется намеренно.
+# Скрипт build.ps1 собирает его из sound.png, но csproj ссылается на файл
+# через ApplicationIcon. Без него в репозитории `dotnet build` и `dotnet run`
+# на свежей копии падают с ошибкой о ненайденном файле значка.
+
+# Пользовательские проекты и настройки.
+# Обычно лежат рядом с проектом (readSounds Projects), но на всякий случай:
+readSounds Projects/
+settings.json
+*.db-journal
+
+# JetBrains Rider и IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.binlog
+*.VC.db
+*.VC.opendb
+
+# Visual Studio Code.
+# Исключения задаются на содержимое папки, а не на саму папку: git не
+# заходит в исключённый каталог, поэтому правило ! на файл внутри
+# .vscode/ не сработало бы.
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Служебное и временное
+TestResults/
+*.trx
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+*.pdb
+*.swp
+*~
+Thumbs.db
+Desktop.ini
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# NuGet
+.nuget/
+*.nupkg
+*.snupkg
